@@ -1,0 +1,9 @@
+{
+  "uuid": "huge-clock@nightrunner91.github.io",
+  "name": "Huge Clock",
+  "description": "Minimal digital clock drawn on the desktop wallpaper: huge thin digits, centered on each monitor. No widgets, no windows, no panels.",
+  "shell-version": ["51"],
+  "url": "https://github.com/nightrunner91/huge-clock",
+  "version": 1,
+  "version-name": "1.0.0"
+}

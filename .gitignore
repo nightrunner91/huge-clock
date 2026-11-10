@@ -1,0 +1,5 @@
+*.zip
+*.gresource
+.vscode/
+.idea/
+__pycache__/

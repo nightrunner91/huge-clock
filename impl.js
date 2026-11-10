@@ -32,6 +32,8 @@ export default class HugeClock {
         this._iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
         this._clocks = [];
         this._buildSeq = 0;
+        // Private, but the standard way to draw behind windows;
+        // Desktop Icons NG uses the same layer.
         this._backgroundGroup = Main.layoutManager._backgroundGroup;
 
         this._buildClocks();

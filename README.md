@@ -1,5 +1,8 @@
 # Huge Clock
 
+[![Release](https://github.com/nightrunner91/huge-clock/actions/workflows/release.yml/badge.svg)](https://github.com/nightrunner91/huge-clock/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A minimal digital clock that lives on your desktop wallpaper: huge thin digits, dead center, on every monitor. No widgets, no windows, no panels — the time is painted on the wallpaper layer, behind your open windows.
 
 ![Huge Clock on a landscape monitor](screenshots/landscape.png)

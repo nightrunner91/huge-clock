@@ -1,5 +1,6 @@
 *.zip
 *.gresource
+schemas/gschemas.compiled
 .vscode/
 .idea/
 __pycache__/

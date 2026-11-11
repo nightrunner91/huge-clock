@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.huge-clock"
+          path="/org/gnome/shell/extensions/huge-clock/">
+
+    <key name="font-family" type="s">
+      <default>'Adwaita Sans, Cantarell'</default>
+      <summary>Font family</summary>
+      <description>
+        CSS font-family list used for the clock digits. Comma-separated;
+        the first family available on the system wins.
+      </description>
+    </key>
+
+    <key name="font-weight" type="i">
+      <default>500</default>
+      <range min="100" max="900"/>
+      <summary>Font weight</summary>
+      <description>
+        Pango/CSS numeric font weight: 400 regular, 500 medium, 700 bold.
+      </description>
+    </key>
+
+    <key name="size-percent" type="d">
+      <default>15.0</default>
+      <range min="1.0" max="50.0"/>
+      <summary>Font size</summary>
+      <description>
+        Font size as a percentage of the monitor's long side. 15% gives
+        288 px on a 1920 px long side, in both landscape and portrait.
+      </description>
+    </key>
+
+    <key name="color-on-dark" type="s">
+      <default>'rgba(255, 255, 255, 0.95)'</default>
+      <summary>Colour in dark mode</summary>
+      <description>
+        CSS colour used when the system colour scheme prefers dark.
+      </description>
+    </key>
+
+    <key name="color-on-light" type="s">
+      <default>'rgba(18, 18, 22, 0.88)'</default>
+      <summary>Colour in light mode</summary>
+      <description>
+        CSS colour used when the system colour scheme prefers light.
+      </description>
+    </key>
+
+    <key name="show-seconds" type="b">
+      <default>false</default>
+      <summary>Show seconds</summary>
+      <description>Show HH:MM:SS instead of HH:MM.</description>
+    </key>
+
+    <key name="only-vendors" type="as">
+      <default>[]</default>
+      <summary>Monitor vendor allow-list</summary>
+      <description>
+        EDID panel vendor codes (for example SAM, BNQ) to show clocks on.
+        An empty list shows the clock on every monitor.
+      </description>
+    </key>
+
+    <key name="hide-on-primary-with-windows" type="b">
+      <default>true</default>
+      <summary>Hide on the primary monitor with windows</summary>
+      <description>
+        Hide the clock on the primary monitor while it has any windows.
+      </description>
+    </key>
+
+  </schema>
+</schemalist>

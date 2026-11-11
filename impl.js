@@ -5,29 +5,11 @@ import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-/* ─── tweak here ─────────────────────────────────────────────────────────── */
-
-// GNOME's default interface font, with fallbacks
-const FONT_FAMILY = '"Adwaita Sans", "Cantarell"';
-// Font weight (400 regular, 500 medium, 700 bold)
-const FONT_WEIGHT = 500;
-// Font size as a fraction of the monitor's long side
-// (1920 → 288 px, both on a 1920×1080 landscape and a 1080×1920 portrait)
-const SIZE_RATIO = 0.15;
-// Text colour
-const COLOR_ON_DARK = 'rgba(255, 255, 255, 0.95)';
-const COLOR_ON_LIGHT = 'rgba(18, 18, 22, 0.88)';
-// Set to true to show seconds (18:51:07) instead of 18:51
-const SHOW_SECONDS = false;
-// Show clocks only on monitors from these panel vendors (EDID codes):
-// 'SAM' = Samsung, 'BNQ' = BenQ. Empty array = every monitor.
-const ONLY_VENDORS = ['SAM'];
-// Hide the clock on the primary monitor while it has any windows on it
-const HIDE_ON_PRIMARY_WITH_WINDOWS = true;
-
-/* ────────────────────────────────────────────────────────────────────────── */
-
 export default class HugeClock {
+    constructor(settings) {
+        this._settings = settings;
+    }
+
     enable() {
         this._iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
         this._clocks = [];
@@ -38,19 +20,19 @@ export default class HugeClock {
 
         this._buildClocks();
 
-        this._signals = [
+        this._ifaceSignals = [
             this._iface.connect('changed::color-scheme', () => this._refreshStyle()),
+        ];
+        this._shellSignals = [
             Main.layoutManager.connect('monitors-changed', () => this._buildClocks()),
+        ];
+        this._settingsSignals = [
+            this._settings.connect('changed', (_settings, key) => this._onSettingChanged(key)),
         ];
 
         // Tick once a second: updates the time and the primary-monitor visibility.
         this._timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
-            const text = this._timeText();
-            for (const {label} of this._clocks) {
-                if (label.text !== text)
-                    label.text = text;
-            }
-
+            this._updateText();
             this._updateVisibility();
             return GLib.SOURCE_CONTINUE;
         });
@@ -60,13 +42,21 @@ export default class HugeClock {
         this._buildSeq++;
 
         if (this._timerId) {
-            GLib.source_remove(this._timerId);
+            GLib.Source.remove(this._timerId);
             this._timerId = null;
         }
 
-        for (const id of this._signals ?? [])
+        for (const id of this._ifaceSignals ?? [])
             this._iface.disconnect(id);
-        this._signals = [];
+        this._ifaceSignals = [];
+
+        for (const id of this._shellSignals ?? [])
+            Main.layoutManager.disconnect(id);
+        this._shellSignals = [];
+
+        for (const id of this._settingsSignals ?? [])
+            this._settings.disconnect(id);
+        this._settingsSignals = [];
 
         this._destroyClocks();
 
@@ -75,14 +65,41 @@ export default class HugeClock {
     }
 
     _timeText() {
-        return GLib.DateTime.new_now_local().format(SHOW_SECONDS ? '%H:%M:%S' : '%H:%M');
+        const format = this._settings.get_boolean('show-seconds') ? '%H:%M:%S' : '%H:%M';
+
+        return GLib.DateTime.new_now_local().format(format);
+    }
+
+    _onSettingChanged(key) {
+        switch (key) {
+        case 'font-family':
+        case 'font-weight':
+        case 'size-percent':
+        case 'color-on-dark':
+        case 'color-on-light':
+            this._refreshStyle();
+            break;
+
+        case 'show-seconds':
+            this._updateText();
+            break;
+
+        case 'only-vendors':
+            this._buildClocks();
+            break;
+
+        case 'hide-on-primary-with-windows':
+            this._updateVisibility();
+            break;
+        }
     }
 
     _buildClocks() {
         const seq = ++this._buildSeq;
         this._destroyClocks();
 
-        if (ONLY_VENDORS.length === 0) {
+        const vendors = this._settings.get_strv('only-vendors');
+        if (vendors.length === 0) {
             this._populateClocks(seq, null);
             return;
         }
@@ -97,13 +114,13 @@ export default class HugeClock {
             null, null,
             Gio.DBusCallFlags.NONE, 3000, null,
             (bus, res) => {
-                let vendors = null;
+                let vendorsByPosition = null;
                 try {
-                    vendors = this._parseVendors(bus.call_finish(res));
+                    vendorsByPosition = this._parseVendors(bus.call_finish(res));
                 } catch (e) {
                     logError(e, 'hugeclock: cannot read monitor vendors');
                 }
-                this._populateClocks(seq, vendors);
+                this._populateClocks(seq, vendorsByPosition);
             });
     }
 
@@ -111,13 +128,14 @@ export default class HugeClock {
         if (seq !== this._buildSeq || !this._backgroundGroup || !this._iface)
             return;
 
+        const allowed = this._settings.get_strv('only-vendors');
         const monitors = Main.layoutManager.monitors;
         const text = this._timeText();
 
         for (const monitor of monitors) {
             // If the vendor is unknown, keep the clock rather than hide it.
             const vendor = vendors?.get(`${monitor.x},${monitor.y}`);
-            if (vendor && !ONLY_VENDORS.includes(vendor))
+            if (vendor && !allowed.includes(vendor))
                 continue;
 
             // BinLayout centers its child: natural size, dead center.
@@ -160,11 +178,24 @@ export default class HugeClock {
         return vendorByPosition;
     }
 
+    _updateText() {
+        const text = this._timeText();
+
+        for (const {label} of this._clocks) {
+            if (label.text !== text)
+                label.text = text;
+        }
+    }
+
     _updateVisibility() {
+        if (!this._settings)
+            return;
+
         const primaryIndex = Main.layoutManager.primaryIndex;
+        const hideOnPrimary = this._settings.get_boolean('hide-on-primary-with-windows');
 
         for (const {monitor, container} of this._clocks) {
-            const busy = HIDE_ON_PRIMARY_WITH_WINDOWS &&
+            const busy = hideOnPrimary &&
                 monitor.index === primaryIndex &&
                 this._hasWindowsOn(monitor);
 
@@ -187,21 +218,24 @@ export default class HugeClock {
     }
 
     _refreshStyle() {
-        if (!this._iface)
+        if (!this._iface || !this._settings)
             return;
 
         const dark = this._iface.get_string('color-scheme') === 'prefer-dark';
-        const color = dark ? COLOR_ON_DARK : COLOR_ON_LIGHT;
+        const color = this._settings.get_string(dark ? 'color-on-dark' : 'color-on-light');
+        const family = this._settings.get_string('font-family');
+        const weight = this._settings.get_int('font-weight');
+        const sizePercent = this._settings.get_double('size-percent');
 
         for (const {monitor, label} of this._clocks) {
             // Rotation is already applied to the monitor geometry, so a portrait
             // screen reports e.g. 1080×1920 and the long side stays 1920.
             const longSide = Math.max(monitor.width, monitor.height);
-            const fontSize = Math.round(longSide * SIZE_RATIO);
+            const fontSize = Math.round(longSide * sizePercent / 100);
 
             label.set_style(
-                `font-family: ${FONT_FAMILY}; ` +
-                `font-weight: ${FONT_WEIGHT}; ` +
+                `font-family: ${family}; ` +
+                `font-weight: ${weight}; ` +
                 `font-size: ${fontSize}px; ` +
                 `font-feature-settings: "tnum" 1; ` +
                 `color: ${color};`);

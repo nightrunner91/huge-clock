@@ -32,7 +32,7 @@ export default class HugeClockExtension extends Extension {
         this._enabled = false;
 
         if (this._watchId) {
-            GLib.source_remove(this._watchId);
+            GLib.Source.remove(this._watchId);
             this._watchId = null;
         }
 
@@ -77,7 +77,7 @@ export default class HugeClockExtension extends Extension {
         try {
             const uri = Gio.File.new_for_path(this._implPath).get_uri();
             const module = await import(`${uri}?v=${stamp}`);
-            const impl = new module.default();
+            const impl = new module.default(this.getSettings());
 
             if (!this._enabled) {
                 impl.enable();

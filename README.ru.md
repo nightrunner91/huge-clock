@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="screenshots/landscape.png" alt="Huge Clock на мониторе в альбомной ориентации">
+  <img src="screenshots/landscape.jpg" alt="Huge Clock на мониторе в альбомной ориентации">
 </p>
 
 <p align="center">
@@ -76,7 +76,7 @@ huge-clock/
 ├── schemas/
 │   └── org.gnome.shell.extensions.huge-clock.gschema.xml
 ├── screenshots/
-│   └── landscape.png
+│   └── landscape.jpg
 ├── Makefile                           # Помощники zip / install
 ├── README.md
 ├── README.ru.md

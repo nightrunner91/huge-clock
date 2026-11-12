@@ -5,5 +5,5 @@
   "shell-version": ["51"],
   "settings-schema": "org.gnome.shell.extensions.huge-clock",
   "url": "https://github.com/nightrunner91/huge-clock",
-  "version-name": "1.0.0"
+  "version-name": "1.0.1"
 }
